@@ -24,6 +24,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * 오류나는이유
+ * afterEach로 디비 초기화 해도 sequence는 초기화 안되기 때문에 1L로 조회하면 널이다 .딜리트도 마찬가지 없는것을 지우려고 하니까 204 에러가 나는것
+ * findByID(1L) 을 쓰지 말고 다른것을 사용하자(로직 생각할것)
+ */
+
 @SpringBootTest
 @AutoConfigureMockMvc
 class UserAccountControllerTest {
@@ -54,13 +60,13 @@ class UserAccountControllerTest {
                 .build();
 
         this.mockMvc.perform(MockMvcRequestBuilders.post("/api/accounts")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(userAccountDTO)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userAccountDTO)))
                 .andDo(print())
                 .andExpect(status().isCreated());
 
 
-        Optional<UserAccount> optionalUserAccount = userAccountRepository.findById(1L);
+        Optional<UserAccount> optionalUserAccount = userAccountRepository.findByUserName(name);
 
         assertTrue(optionalUserAccount.isPresent());
 
@@ -189,19 +195,21 @@ class UserAccountControllerTest {
     }
 
 
-
     @Test
     @DisplayName("유저 삭제 테스트")
     public void deleteUser() throws Exception {
+
+        String userName = "youngsoo";
+
+
         UserAccount userAccount = UserAccount.builder()
                 .userId("youngsoo@naver.com")
-                .userName("youngsoo")
+                .userName(userName)
                 .build();
 
-        Long userSeq = 1L;
+        UserAccount savedUser = userAccountRepository.save(userAccount);
 
-
-        userAccountRepository.save(userAccount);
+        Long userSeq = savedUser.getSeq();
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/accounts/{id}", userSeq))
                 .andExpect(status().isOk());
