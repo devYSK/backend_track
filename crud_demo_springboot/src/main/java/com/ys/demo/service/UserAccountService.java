@@ -30,7 +30,10 @@ public class UserAccountService {
     @Transactional
     public UserAccount findUser(Long id) {
         Optional<UserAccount> optionalUserAccount = userAccountRepository.findById(id);
-        return optionalUserAccount.orElse(null);
+
+        UserAccount userAccount = optionalUserAccount.orElseThrow();
+
+        return userAccount;
     }
 
     @Transactional
@@ -39,8 +42,6 @@ public class UserAccountService {
 
         if (userAccount == null)
             return null;
-
-//                .orElseThrow(() -> new IllegalStateException("해당 id에 해당하는 user가 없습니다. id : " + id));
 
         userAccount.setUserName(userAccountDTO.getUserName());
         userAccount.setUserId(userAccountDTO.getUserId());

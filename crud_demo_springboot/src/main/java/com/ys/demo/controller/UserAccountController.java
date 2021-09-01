@@ -2,6 +2,7 @@ package com.ys.demo.controller;
 
 
 import com.ys.demo.dto.UserAccountDTO;
+import com.ys.demo.dto.UserAccountResponseDTO;
 import com.ys.demo.model.UserAccount;
 import com.ys.demo.service.UserAccountService;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
@@ -28,7 +30,9 @@ public class UserAccountController {
 
         List<UserAccount> all = userAccountService.findAll();
 
-        return all.size() > 0 ? ResponseEntity.ok(all) : ResponseEntity.noContent().build();
+        return all.size() > 0 ?
+                ResponseEntity.ok(all.stream().map(UserAccountResponseDTO::new).collect(Collectors.toList()))
+                : ResponseEntity.noContent().build();
     }
 
 
@@ -53,11 +57,11 @@ public class UserAccountController {
     @GetMapping("/{id}")
     public ResponseEntity getAccount(@PathVariable Long id) {
 
-        UserAccount findUser = userAccountService.findUser(id);
+        UserAccount userAccount = userAccountService.findUser(id);
 
-
-        return findUser != null ? ResponseEntity.ok(findUser) : ResponseEntity.noContent().build();
+        return userAccount != null ? ResponseEntity.ok(new UserAccountResponseDTO(userAccount)) : ResponseEntity.noContent().build();
     }
+
 
     @PutMapping("/{id}")
     public ResponseEntity updateAccount(@PathVariable Long id,
@@ -71,7 +75,7 @@ public class UserAccountController {
         UserAccount updatedUser = userAccountService.updateUser(id, userAccountDTO);
 
         return updatedUser != null ?
-                ResponseEntity.ok(updatedUser) : ResponseEntity.noContent().build();
+                ResponseEntity.ok(new UserAccountResponseDTO(updatedUser)) : ResponseEntity.noContent().build();
     }
 
 

@@ -1,13 +1,14 @@
 package com.ys.demo.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ys.demo.dto.UserInfoDTO;
+import com.ys.demo.dto.UserInfoResponseDTO;
 import com.ys.demo.model.UserAccount;
 import com.ys.demo.model.UserInfo;
 import com.ys.demo.repository.UserAccountRepository;
 import com.ys.demo.repository.UserInfoRepository;
 import com.ys.demo.service.UserInfoService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.List;
@@ -45,6 +45,13 @@ class UserInfoControllerTest {
     @Autowired
     UserInfoService userInfoService;
 
+
+    @AfterEach
+    public void afterEach() {
+        userInfoRepository.deleteAll();
+        userAccountRepository.deleteAll();
+    }
+
     @Test
     @DisplayName("유저 정보 생성 성공 테스트")
     public void createUserInfo() throws Exception {
@@ -62,14 +69,20 @@ class UserInfoControllerTest {
                 .sex(sex)
                 .build();
 
-        ResultActions resultActions = this.mockMvc.perform(MockMvcRequestBuilders.post("/api/userinfo")
+        String contentAsString = this.mockMvc.perform(MockMvcRequestBuilders.post("/api/userinfo")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(userInfoDTO)))
                 .andDo(print())
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        UserInfoResponseDTO userInfoResponseDTO = objectMapper.readValue(contentAsString, UserInfoResponseDTO.class);
 
 
-        Optional<UserInfo> optionalUserInfo = userInfoRepository.findById(1L);
+        Long seq = userInfoResponseDTO.getSeq();
+
+
+        Optional<UserInfo> optionalUserInfo = userInfoRepository.findById(seq);
         UserInfo savedUserInfo = optionalUserInfo.orElse(null);
 
         assertNotNull(savedUserInfo != null ? savedUserInfo.getUserAccount() : null);
@@ -96,10 +109,10 @@ class UserInfoControllerTest {
 
         for (int i = 0; i < size; i++) {
             userInfoRepository.save(UserInfo.builder()
-                            .userAccount(userAccount)
-                            .address("home " + i)
-                            .age(20 + i)
-                            .sex("남자").build());
+                    .userAccount(userAccount)
+                    .address("home " + i)
+                    .age(20 + i)
+                    .sex("남자").build());
         }
 
         this.mockMvc.perform(MockMvcRequestBuilders.get("/api/userinfo"))
@@ -129,9 +142,9 @@ class UserInfoControllerTest {
                 .sex(sex)
                 .build();
 
-        userInfoService.createUserInfo(userInfoDTO);
+        UserInfoResponseDTO userInfo = userInfoService.createUserInfo(userInfoDTO);
 
-        this.mockMvc.perform(MockMvcRequestBuilders.delete("/api/userinfo/{id}", userInfoDTO.getUserSeq()))
+        this.mockMvc.perform(MockMvcRequestBuilders.delete("/api/userinfo/{id}", userInfo.getSeq()))
                 .andExpect(status().isOk())
                 .andDo(print());
 
@@ -171,8 +184,8 @@ class UserInfoControllerTest {
                 .build();
 
         this.mockMvc.perform(MockMvcRequestBuilders.put("/api/userinfo/{id}", id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(userInfoDTO)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userInfoDTO)))
                 .andExpect(status().isOk())
                 .andDo(print());
 
